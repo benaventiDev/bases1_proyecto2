@@ -19,7 +19,14 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS ConsultarEmpleado $$
 CREATE PROCEDURE ConsultarEmpleado(IN id_empleado_in INT(8) ZEROFILL)
-BEGIN
+consultarEmpleado:BEGIN
+	DECLARE empleado_exists INT;
+	SET empleado_exists = 0;
+	SELECT COUNT(*) INTO empleado_exists FROM empleados WHERE id_empleado = id_empleado_in;
+	IF empleado_exists = 0 THEN
+		SELECT "ERROR: El empleado no existe." AS ERROR;
+        LEAVE consultarEmpleado;
+	END IF;
   SELECT 
     e.id_empleado,
     CONCAT(e.nombre, ' ', e.apellido) AS nombre_completo,
@@ -44,7 +51,25 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS ConsultarPedidosCliente $$
 CREATE PROCEDURE ConsultarPedidosCliente(IN order_id_in INT)
-BEGIN
+consultarPedidosCliente:BEGIN
+	DECLARE orden_exists INT;
+	DECLARE order_status VARCHAR(20);
+	SET orden_exists = 0;
+	SET order_status = '';
+	SELECT COUNT(*) INTO orden_exists FROM ordenes WHERE id_orden  = order_id_in;
+	IF orden_exists = 0 THEN
+		SELECT "ERROR: La orden no existe no existe." AS ERROR;
+        LEAVE consultarPedidosCliente;
+	END IF;
+	SELECT estado INTO  order_status FROM ordenes WHERE id_orden  = order_id_in;
+	IF(order_status = 'INICIADA' ) THEN
+		SELECT "WARNING: La orden esta iniciada y aun no tiene productos." AS ERROR;
+		LEAVE consultarPedidosCliente;
+	END IF;
+	IF (order_status = 'SIN COBERTURA' ) THEN
+		SELECT "ERROR: Orden sin cobertura no puede tener productos." AS ERROR;
+		LEAVE consultarPedidosCliente;
+	END IF;
   SELECT 
     pr.nombre AS producto,
     CASE pr.producto_tipo
@@ -71,7 +96,14 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS ConsultarHistorialOrdenes $$
 CREATE PROCEDURE ConsultarHistorialOrdenes(IN client_dpi_in BIGINT UNSIGNED)
-BEGIN
+consultarHistorialOrdenes:BEGIN
+	DECLARE cliente_exists INT;
+	SET cliente_exists = 0;
+   	SELECT COUNT(*) INTO cliente_exists FROM clientes WHERE dpi = client_dpi_in;
+   	IF cliente_exists = 0 THEN
+   		SELECT "ERROR: No existe ningun cliente con ese DPI." AS ERROR;
+   		LEAVE consultarHistorialOrdenes;
+   	END IF;
   SELECT 
     o.id_orden,
     o.fecha_inicio,
@@ -105,8 +137,15 @@ DELIMITER ;
 /************************************#5 ***************************************/
 DELIMITER $$
 DROP PROCEDURE IF EXISTS ConsultarDirecciones $$
-CREATE PROCEDURE ConsultarDirecciones(IN cliente_dpi BIGINT)
-BEGIN
+CREATE PROCEDURE ConsultarDirecciones(IN cliente_dpi_in BIGINT)
+consultarDirecciones:BEGIN
+	DECLARE cliente_exists INT;
+	SET cliente_exists = 0;
+   	SELECT COUNT(*) INTO cliente_exists FROM clientes WHERE dpi = cliente_dpi_in;
+   	IF cliente_exists = 0 THEN
+   		SELECT "ERROR: No existe ningun cliente con ese DPI." AS ERROR;
+   		LEAVE consultarDirecciones;
+   	END IF;
   SELECT 
     d.direccion,
     m.name_municipio,
@@ -116,7 +155,7 @@ BEGIN
   JOIN
     municipios m ON d.municipio_id = m.id_municipio
   WHERE
-    d.dpi_cliente = cliente_dpi;
+    d.dpi_cliente = cliente_dpi_in;
 END $$
 DELIMITER ;
 
@@ -125,7 +164,7 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS MostrarOrdenes $$
 CREATE PROCEDURE MostrarOrdenes(IN state_code INT)
-BEGIN
+mostrarOrdenes:BEGIN
   DECLARE state_name VARCHAR(20);
 
   CASE state_code
@@ -162,7 +201,7 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS ConsultarFacturas $$
 CREATE PROCEDURE ConsultarFacturas(IN dia INT, IN mes INT, IN anio INT)
-BEGIN
+consultarFacturas:BEGIN
   SELECT 
     f.serial_number,
     f.monto_total,
@@ -190,7 +229,7 @@ DELIMITER ;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS ConsultarTiempos $$
 CREATE PROCEDURE ConsultarTiempos(IN tiempoEsperaMinutos INT)
-BEGIN
+consultarTiempos:BEGIN
   SELECT 
     o.id_orden,
     d.direccion,

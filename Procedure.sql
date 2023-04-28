@@ -76,7 +76,13 @@ registrarRestaurante:BEGIN
     END IF;
    	IF parqueo_propio_in = 0 THEN
    		SET parqueo = FALSE;
+   	ELSE IF parqueo_propio_in = 1 THEN
+   		SET parqueo = TRUE;
    	ELSE
+   		SELECT "Parametro de parqueo invalido." AS ERROR;
+        LEAVE registrarRestaurante;
+   	END IF
+   	
 		SET parqueo = TRUE;
 	END IF;
    
@@ -347,7 +353,7 @@ agregarItem:BEGIN
     END IF;
    	SELECT estado INTO order_status FROM ordenes WHERE id_orden = id_orden_in;
    	IF (order_status NOT IN ('INICIADA', 'AGREGANDO')) THEN
-        SELECT "ERROR: La orden debe tener estado 'INICIADA' o 'AGREGANDO'." AS ERROR;
+        SELECT CONCAT("ERROR: La orden debe tener estado 'INICIADA' o 'AGREGANDO'. Actualmente esta como: ", order_status)AS ERROR;
         LEAVE agregarItem;
     END IF;
 	UPDATE ordenes SET estado = 'AGREGANDO' WHERE id_orden = id_orden_in AND estado = 'INICIADA';
